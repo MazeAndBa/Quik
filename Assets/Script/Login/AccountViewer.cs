@@ -29,8 +29,7 @@ public class AccountViewer : MonoBehaviour {
     private void Awake()
     {
         am = new AccountManager();
-        Screen.fullScreen = true;
-        //Screen.SetResolution(1920, 1080, false);
+        //Screen.fullScreen = true;
     }
 
     void Start() {
@@ -70,7 +69,7 @@ public class AccountViewer : MonoBehaviour {
     {
 		StartCoroutine(am.CheckLogin("login.php", logininfo));
         StartCoroutine(waitload());
-        yield return new WaitForSeconds(0.8f);
+        yield return new WaitForSeconds(1f);
         if (am.state == 1)
         {
             //showerror("登入成功");
@@ -149,7 +148,7 @@ public class AccountViewer : MonoBehaviour {
     {
         StartCoroutine(am.CheckRegister("register.php", registerinfo));//此處用php新增帳戶
         StartCoroutine(waitload());
-        yield return new WaitForSeconds(0.8f);
+        yield return new WaitForSeconds(1f);
 
         if (am.state == 0) {
             SceneManager.LoadScene("Home");

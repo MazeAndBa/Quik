@@ -62,6 +62,7 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
         hintLA_count = 10000; hintST_count = 10000;
         c_hintLA_count = 0; c_hintST_count = 0;
         wrongNum = 0;
+        IsShowingResults = false;
         RefreshConnectUI();
 
     }
@@ -151,11 +152,11 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
         else //競賽結束，顯示本次雙方分數
         {
             this.StartCoroutine("ShowResultsBeginNextTurnCoroutine");
-            yield return new WaitForSeconds(3f);
+            yield return new WaitForSeconds(5f);
             this.StartCoroutine("showResult");
         }
     }
-    IEnumerator showResult() {
+    IEnumerator showResult() {//總排名
         GameObject[] PlayerLists = GameObject.FindGameObjectsWithTag("PlayerLists");//抓取玩家名單的物件，方便銷毀
         GameStartUI.SetActive(false);
         ResultUIView.SetActive(true);
@@ -207,7 +208,6 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
         this.question.text = "";
         this.localSelection = "";
         this.remoteSelection = "";
-        IsShowingResults = false;
 
     }
     public IEnumerator initialTurn()//回合初始化
@@ -237,7 +237,7 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
 
         timerflag = true;
         TurnStartTime = DateTime.Now;
-
+        IsShowingResults = false;
     }
 
     //建立卡牌
@@ -289,10 +289,14 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
             {
                 if (tmp_cards[i].name != cardName)
                 {
+                    //Debug.Log(tmp_cards[i]);
                     tmp_cards[i].GetComponent<Button>().interactable = false;
+                    //tmp_cards[i].GetComponentsInChildren<Image>()[1].color = Color.gray;
                 }
             }
         }
+        IsShowingResults = true;
+
     }
 
     //作答耗費的時間
@@ -349,7 +353,7 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
         }
     }
 
-    //顯示當回合的競賽結果
+    //顯示當回合的答題結果
     public IEnumerator ShowResultsBeginNextTurnCoroutine()
     {
         //ButtonCanvasGroup.interactable = false;
@@ -399,15 +403,15 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
         switch (this.result)
         {
             case ResultType.CorrectAns:
-                PhotonNetwork.player.AddScore((int)(restTime * 0.8+ local.GetScore() * 0.2 - (_hintLA * 1) - (_hintST *3)+ (PhotonNetwork.room.PlayerCount * 0.25) ));//剩餘時間*0.8+原本分數*0.2-使用提示+房間人數*0.5
+                PhotonNetwork.player.AddScore((int)(restTime * 0.8+ local.GetScore() * 0.2 - (_hintLA * 1) - (_hintST *1.5)+ (PhotonNetwork.room.PlayerCount * 0.25) ));//剩餘時間*0.8+原本分數*0.2-使用提示+房間人數*0.5
                 resultState = "correct";
                 break;
             case ResultType.None:
-                PhotonNetwork.player.AddScore(-5);
+                PhotonNetwork.player.AddScore(-4);
                 resultState = "none";
                 break;
             case ResultType.WrongAns:
-                PhotonNetwork.player.AddScore(-2);
+                PhotonNetwork.player.AddScore(-1);
                 resultState = "wrong";
                 break;
         }
@@ -466,7 +470,7 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
     }
 
     void RefreshWaitUI() {
-        if (PhotonNetwork.room.PlayerCount <= 5)
+        if (PhotonNetwork.room.PlayerCount <= 4)
         {
             if (PhotonNetwork.isMasterClient)
             {
@@ -487,7 +491,7 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
         HostInfo.GetComponentsInChildren<Text>()[0].text = hostPlayer.NickName;
 
         //Initialize players'name
-        for (int i = 1; i < 5; i++)
+        for (int i = 1; i < 4; i++)
         {
             GameObject PlayerInfo = GameObject.FindGameObjectWithTag("Player" + i);
             PlayerInfo.GetComponentsInChildren<Text>()[0].text = "";
@@ -541,7 +545,7 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
         /*---顯示獲得獎章與稱號---*/
         for (int i = 0; i < achievementState.Length; i++) {
             if (achievementState[i] != null) {
-                ShowMesUI.SetActive(true);
+                //ShowMesUI.SetActive(true);
                 ShowMesUI.GetComponentInChildren<Text>().text = achievementState[i];
                 switch (i) {
                     case 0:
@@ -578,10 +582,13 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
     public void ClickGameStart()
     {
         ClickBtn.Play();
-        if (PhotonNetwork.room.PlayerCount > 1)
+        //if (PhotonNetwork.room.PlayerCount== 4)
+        if (PhotonNetwork.room.PlayerCount>=2 && PhotonNetwork.room.PlayerCount<=4)
         {
-
+            PhotonNetwork.room.IsOpen = false;
+            PhotonNetwork.room.IsVisible = false;
             this.photonView.RPC("GameStart", PhotonTargets.All);
+
         }
         else
         {

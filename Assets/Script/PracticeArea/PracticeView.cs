@@ -47,17 +47,17 @@ public class PracticeView : MonoBehaviour {
     }
 
     void Start () {
+        StartCoroutine(showReviewVocabulary());
         text_score = score.GetComponentsInChildren<Text>()[0];
         ClickBtn = GetComponentsInChildren<AudioSource>()[0];
         p_score = 0;
         vocabularyID = 0;
-        C_correctNum = 0;//當前連續答對題數
+        C_correctNum = -1;//當前連續答對題數
         max_correctNum = -1;//最大連續答對數
         correctNum = 0;//累計正確題數
         wrongNum = 0;//累計錯誤題數
         totalQuesNum = 10;//練習題數
         showAchieve = false;
-        StartCoroutine(showReviewVocabulary());
         UIManager.Instance.CloseAllPanel();
 
         showReviewUI();
@@ -76,24 +76,26 @@ public class PracticeView : MonoBehaviour {
         btn_gotonext = GetComponentsInChildren<Button>()[4];
         btn_skip = GetComponentsInChildren<Button>()[5];
         btn_gotonext.gameObject.SetActive(false);
+        if (!pm.getReviewCount())
+        {
+            btn_skip.gameObject.SetActive(false);
+        }
+        else
+        {
+            btn_skip.gameObject.SetActive(true);
+        }
         VocabularyAS = GetComponentsInChildren<AudioSource>()[2];
+        btn_gotonext.onClick.AddListener(reviewEnd);
         btn_pronun.onClick.AddListener(delegate () { playAudio(vocabularyID); });
         btn_pre.onClick.AddListener(delegate () { changeVocabularyID(-1); });
         btn_next.onClick.AddListener(delegate () { changeVocabularyID(1); });
         btn_skip.onClick.AddListener(skip);
 
-        if (!pm.getReviewCount())
-        {
-            btn_skip.gameObject.SetActive(false);
-        }
-        else {
-            btn_skip.gameObject.SetActive(true);
-        }
     }
 
 
     IEnumerator showReviewVocabulary(){
-        StartCoroutine(pm.LoadVocabulary("loadVocabulary"));
+        StartCoroutine(pm.LoadVocabulary("loadVocabulary.php"));
         yield return new WaitForSeconds(0.2f);
         changeVocabularyID(0);
     }
@@ -108,13 +110,11 @@ public class PracticeView : MonoBehaviour {
                 playAudio(vocabularyID);
                 btn_gotonext.gameObject.SetActive(false);
                 text_English.text = pm.E_vocabularyDic[vocabularyID];
-                text_Translation.text = pm.T_vocabularyDic[vocabularyID];
+                text_Translation.text = pm.T_vocabularyDic[vocabularyID]+"\n" + pm.EM_vocabularyDic[vocabularyID];
             }
             else
             {
-                string _state = pm.setLearningCount("review_count");//更新單字瀏覽次數
                 btn_gotonext.gameObject.SetActive(true);
-                btn_gotonext.onClick.AddListener(showPracticeUI);
             }
         }
     }
@@ -123,6 +123,12 @@ public class PracticeView : MonoBehaviour {
         ClickBtn.Play();
         VocabularyAS.clip = Resources.Load("Sound/" + pm.E_vocabularyDic[_vocabularyID], typeof(AudioClip)) as AudioClip;
         VocabularyAS.Play();
+    }
+    void reviewEnd()
+    {
+        string _state = pm.setLearningCount("review_count");//更新單字瀏覽次數
+        ClickBtn.Play();
+        showPracticeUI();
     }
 
     void skip()
@@ -193,22 +199,24 @@ public class PracticeView : MonoBehaviour {
         }
     }
 
-    IEnumerator compareAns(int optionID,int _quesID) {
+    IEnumerator compareAns(int optionID, int _quesID) {
         ClickBtn.Play();
+        for (int i = 0; i < btn_option.Length; i++) {
+            btn_option[i].GetComponent<Button>().interactable = false;
+        }
         if (_quesID == quesID)
         {
             if (correctOption.Equals(optionID))//答對
             {
-                btn_option[optionID].GetComponent<Button>().interactable = false;//避免重複點擊,增加分數
-                StartCoroutine(showfeedback(0));
-                p_score += (int)(p_score *0.2+ max_correctNum*0.3+correctNum*0.15) + 3;
-                text_score.text = p_score.ToString();
+                //btn_option[optionID].GetComponent<Button>().interactable = false;//避免重複點擊,增加分數
+                StartCoroutine(showfeedback(0,0));
+
             }
             else//答錯
             {
-                btn_option[correctOption].GetComponent<Button>().interactable = false;//避免重複點擊,增加分數
+                //btn_option[correctOption].GetComponent<Button>().interactable = false;//避免重複點擊,增加分數
                 btn_option[correctOption].GetComponent<Image>().color = Color.red;
-                StartCoroutine(showfeedback(1));
+                StartCoroutine(showfeedback(1,0));
             }
 
             yield return new WaitForSeconds(0.5f);
@@ -218,8 +226,12 @@ public class PracticeView : MonoBehaviour {
     }
     //重設按鈕
     void resetButton(int optionID) {
-        btn_option[optionID].GetComponent<Button>().interactable = true;
-        btn_option[correctOption].GetComponent<Button>().interactable = true;
+        //btn_option[optionID].GetComponent<Button>().interactable = true;
+        //btn_option[correctOption].GetComponent<Button>().interactable = true;
+        for (int i = 0; i < btn_option.Length; i++)
+        {
+            btn_option[i].GetComponent<Button>().interactable = true;
+        }
         btn_option[correctOption].GetComponent<Image>().color = c_original;
     }
 
@@ -344,16 +356,14 @@ public class PracticeView : MonoBehaviour {
         btn_submit.GetComponent<Button>().interactable = false;//避免重複點擊,增加分數
         if (userAns == pm.E_vocabularyDic[randomQuestion[quesID]])
         {
-            StartCoroutine(showfeedback(0));
-            p_score += (int)(p_score *0.1);
-            text_score.text = p_score.ToString();
+            StartCoroutine(showfeedback(0,1));
 
         }
         else {
             //Debug.Log("你的答案:" + userAns);
             //Debug.Log("正確答案:" + pm.E_vocabularyDic[randomQuestion[quesID]]);
             text_quescontent.text = pm.E_vocabularyDic[randomQuestion[quesID]];
-            StartCoroutine(showfeedback(1));
+            StartCoroutine(showfeedback(1,1));
         }
         yield return new WaitForSeconds(0.5f);
         btn_submit.GetComponent<Button>().interactable = true;
@@ -468,8 +478,8 @@ public class PracticeView : MonoBehaviour {
     }
 
 
-
-    IEnumerator showfeedback(int _state)
+    
+    IEnumerator showfeedback(int _state,int pracNum)//pracNum代表練習題型的編號，0:選擇、1:拼字
     {
         GameObject fb  = Instantiate(UI_showAnsfeedback);//Options
         fb.transform.SetParent(this.gameObject.transform);
@@ -479,12 +489,23 @@ public class PracticeView : MonoBehaviour {
         Image img_wrong = fb.GetComponentsInChildren<Image>()[1];
         img_correct.gameObject.SetActive(false);
         img_wrong.gameObject.SetActive(false);
-
         if (_state == 0)//答對
         {
             C_correctNum++;
             correctNum++;
             img_correct.gameObject.SetActive(true);
+            if (pracNum == 0)
+            {
+                p_score += (int)(p_score * 0.15 + max_correctNum * 0.3 + correctNum * 0.15) + 1;
+                text_score.text = p_score.ToString();
+            }
+            else if (pracNum == 1)
+            {
+                p_score += (int)(p_score * 0.3 + max_correctNum * 0.3 + correctNum * 0.15) + 2;
+                text_score.text = p_score.ToString();
+            }
+            //Debug.Log("目前累計答對:" + correctNum);
+
         }
         else//答錯
         {
@@ -492,11 +513,17 @@ public class PracticeView : MonoBehaviour {
             {
                 max_correctNum = C_correctNum;
                 C_correctNum = 0;
+                //Debug.Log("目前最大連續答對:" + max_correctNum);
             }
             wrongNum++;
             img_wrong.gameObject.SetActive(true);
-
+            //Debug.Log("目前累計答錯:"+wrongNum);
         }
+        if (C_correctNum >= max_correctNum)//適用於全部作答正確
+        {
+            max_correctNum = C_correctNum;
+        }
+
         yield return new WaitForSeconds(0.5f);
         Destroy(fb);
     }

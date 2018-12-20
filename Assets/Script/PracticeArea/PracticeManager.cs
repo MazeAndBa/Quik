@@ -5,11 +5,13 @@ using System.Net;
 using UnityEngine;
 
 public class PracticeManager {
-    private string serverlink = "http://140.115.126.137/Quik/";
+    private string serverlink = "http://140.115.126.167/Quik/";
     HttpWebRequest request;
     Xmlprocess xmlprocess;
     public Dictionary<int, string> E_vocabularyDic = new Dictionary<int, string>();//key=單字ID,val=英文單字
     public Dictionary<int, string> T_vocabularyDic = new Dictionary<int, string>();//key=單字ID,val=英文中譯
+    public Dictionary<int, string> EM_vocabularyDic = new Dictionary<int, string>();//key=單字ID,val=英文意思
+
 
     public PracticeManager() {
         xmlprocess = new Xmlprocess();
@@ -31,6 +33,7 @@ public class PracticeManager {
 
                 E_vocabularyDic.Add(i, tmp2[0]);
                 T_vocabularyDic.Add(i, tmp2[1]);
+                EM_vocabularyDic.Add(i, tmp2[2]);
             }
         }
         else

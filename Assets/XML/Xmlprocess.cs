@@ -20,7 +20,7 @@ public class Xmlprocess
     ///<summary>
     ///initial file,search the same xml file with the same userID
     ///</summary>
-    public Xmlprocess(string filename)
+    public Xmlprocess(string filename, string[] userInfo)
     { //database initial
         if (Application.platform == RuntimePlatform.Android)
         {
@@ -34,7 +34,21 @@ public class Xmlprocess
 
         _FileName = filename + ".xml";
 
-        if (isExits())
+        if (!isExits())
+        {
+            xmlCreate = new XmlCreate(path, _FileName);//若檔案不存在，則創建xml
+            xmlDoc = new XmlDocument();
+            xmlDoc.Load(path + _FileName);
+            XmlNode node = xmlDoc.SelectSingleNode("Loadfile/User");
+            XmlElement element = (XmlElement)node;
+            XmlAttribute[] attributeList = { element.GetAttributeNode("ID"), element.GetAttributeNode("name"), element.GetAttributeNode("level"), element.GetAttributeNode("sex") };
+            for (int i = 0; i < userInfo.Length; i++)
+            {
+                attributeList[i].Value = userInfo[i];
+            }
+            saveData();
+        }
+        else
         {
             xmlDoc = new XmlDocument();
             xmlDoc.Load(path + _FileName);
@@ -50,15 +64,23 @@ public class Xmlprocess
         }
     }
 
-    private Boolean isExits()
+   /* private Boolean isExits()
     {
         if (!System.IO.File.Exists(path + _FileName))
         {
             xmlCreate = new XmlCreate(path, _FileName);//若檔案不存在，則創建xml
         }
         return true;
-    }
+    }*/
 
+    private Boolean isExits()
+    {
+        if (!System.IO.File.Exists(path + _FileName))
+        {
+            return false;
+        }
+        return true;
+    }
 
 
     public void saveData()
@@ -77,9 +99,12 @@ public class Xmlprocess
     ///<summary>
     ///When registering,initial set userInfo.
     ///</summary>
-    public void setUserInfo(string[] userInfo)
+    /*public void setUserInfo(string[] userInfo)
     {
-        if (isExits())
+        if(System.IO.File.Exists(path + _FileName))//如果已經有xml檔，讀XML檔
+        {
+
+        }else if (isExits())//如果沒有xml檔，讀SQL
         {
             XmlNode node = xmlDoc.SelectSingleNode("Loadfile/User");
             XmlElement element = (XmlElement)node;
@@ -91,6 +116,7 @@ public class Xmlprocess
             saveData();
         }
     }
+    */
 
     ///<summary>
     ///return an array, 0=ID,1=name,2=level,3=sex
@@ -126,10 +152,10 @@ public class Xmlprocess
             float standardVal = 100 + ((level-1) * 35f);
             if (levelVal >= standardVal){
                 level++;
-                attribute.Value = level.ToString();
                 levelVal = levelVal - standardVal;
-                saveData();
             }
+            attribute.Value = level.ToString();
+            saveData();
         }
     }
 

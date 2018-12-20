@@ -17,7 +17,7 @@ public class UpdateSQL : MonoBehaviour {
     MySQLAccess mySQLAccess;
     public XmlDocument xmlDoc;
 
-    //private string serverlink = "http://140.115.126.137/Quik/uploadData.php";
+    //private string serverlink = "http://140.115.126.167/Quik/uploadData.php";
 
 
     public int stateBG;
