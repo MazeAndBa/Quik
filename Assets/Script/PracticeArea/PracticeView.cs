@@ -252,20 +252,20 @@ public class PracticeView : MonoBehaviour {
 
     #region PracticeCompose function
     void showComposeUI() {
+        quesID = 0;
+        randomQuestion = pm.randomQuestion();
 
         btn_alphabet = Resources.Load("UI/Btn_Alphabet", typeof(Button)) as Button;
         text_totalQues = GetComponentsInChildren<Text>()[1];
         text_Question = GetComponentsInChildren<Text>()[2];
         text_quescontent = GetComponentsInChildren<Text>()[3];
         VocabularyAS = GetComponentsInChildren<AudioSource>()[2];
-
         btn_clear = GetComponentsInChildren<Button>()[1];
         btn_submit = GetComponentsInChildren<Button>()[2];
+
         btn_clear.onClick.AddListener(resetAns);
         btn_submit.onClick.AddListener(delegate () { StartCoroutine(compareComposeAns(quesID)); });
 
-        quesID = 0;
-        randomQuestion = pm.randomQuestion();
         StartCoroutine(showComposeQues(quesID));
     }
 
@@ -287,7 +287,7 @@ public class PracticeView : MonoBehaviour {
     {
         text_quescontent.text = "";//初始化題目空格
         userAns = "";
-
+        btn_submit.GetComponent<Button>().interactable = false;
         playAudio(randomQuestion[quesID]);
         StartCoroutine(randomSort(randomQuestion[quesID]));
         yield return new WaitForSeconds(0.1f);
@@ -336,6 +336,7 @@ public class PracticeView : MonoBehaviour {
         userAns += _trigger.name;//將點擊的選項存入usrAns
         setQuesContent(_trigger.name);
         _trigger.gameObject.SetActive(false);
+        btn_submit.GetComponent<Button>().interactable = true;
         //Destroy(_trigger.gameObject);//按鈕點擊後消失
     }
 
@@ -450,7 +451,7 @@ public class PracticeView : MonoBehaviour {
     {
         if (_quesID == quesID)
         {
-            if (quesID >= totalQuesNum-1)
+            if (quesID >= totalQuesNum - 1)//最後一題
             {
                 switch (functionName)
                 {
@@ -478,11 +479,25 @@ public class PracticeView : MonoBehaviour {
                         break;
                 }
             }
+        }else
+        {
+            Debug.Log(_quesID);
+            quesID = 0;
+            switch (functionName)
+            {
+                case "practice":
+                    showPracticeQues(quesID);
+                    break;
+                case "compose":
+                    initialComposeButton(quesID);
+                    break;
+            }
         }
+
     }
 
 
-    
+
     IEnumerator showfeedback(int _state,int pracNum)//pracNum代表練習題型的編號，0:選擇、1:拼字
     {
         GameObject fb  = Instantiate(UI_showAnsfeedback);//Options

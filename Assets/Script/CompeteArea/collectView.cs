@@ -192,6 +192,10 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
     public void StartTurn()
     {
         Debug.Log("start");
+        if (this.turnManager.Turn == 0)
+        {
+            InitialGameUI();
+        }
         //房主抓取題目、選項、當前回合數
         if (PhotonNetwork.isMasterClient)
         {
@@ -199,12 +203,7 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
             this.turnManager.selectQues(collectConn.ques);
             this.turnManager.randomOptions(collectConn.option);
         }
-        Debug.Log("turn"+this.turnManager.Turn);
-
-        if (this.turnManager.Turn == 0)
-        {
-            InitialGameUI();
-        }
+        //Debug.Log("turn"+this.turnManager.Turn);
         this.question.text = "";
         this.localSelection = "";
         this.remoteSelection = "";
@@ -525,8 +524,8 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
         for (int i = 0; i < PhotonNetwork.room.PlayerCount; i++)
         {
             PhotonPlayer local = PhotonNetwork.player;
-            LocalPlayerText.text = local.GetScore().ToString("D2");
             PhotonNetwork.playerList[i].SetScore(0);//重置玩家分數
+            LocalPlayerText.text = local.GetScore().ToString("D2");
             player = PhotonNetwork.playerList;
             //player[i].SetScore(0);
 
