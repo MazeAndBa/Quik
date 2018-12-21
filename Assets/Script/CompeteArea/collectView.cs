@@ -199,7 +199,9 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
             this.turnManager.selectQues(collectConn.ques);
             this.turnManager.randomOptions(collectConn.option);
         }
-        if (this.turnManager.Turn <= 1)
+        Debug.Log("turn"+this.turnManager.Turn);
+
+        if (this.turnManager.Turn == 0)
         {
             InitialGameUI();
         }
