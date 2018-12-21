@@ -44,10 +44,10 @@ public class PracticeView : MonoBehaviour {
     {
         achievementState = new string[5];//學習區獎章數量
         pm = new PracticeManager();
+        StartCoroutine(showReviewVocabulary());
     }
 
     void Start () {
-        StartCoroutine(showReviewVocabulary());
         text_score = score.GetComponentsInChildren<Text>()[0];
         ClickBtn = GetComponentsInChildren<AudioSource>()[0];
         p_score = 0;
@@ -96,7 +96,7 @@ public class PracticeView : MonoBehaviour {
 
     IEnumerator showReviewVocabulary(){
         StartCoroutine(pm.LoadVocabulary("loadVocabulary.php"));
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSeconds(0.5f);
         changeVocabularyID(0);
     }
 
