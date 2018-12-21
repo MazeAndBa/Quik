@@ -79,13 +79,15 @@ public class AccountViewer : MonoBehaviour {
         {
             showerror("帳號或密碼不正確");
             //showerror(am.s_state);
-
         }
         else if (am.state == 2)
         {
             showerror("連線失敗");
         }
-
+        else if (am.state == 3)
+        {
+            showerror("發生錯誤");
+        }
     }
 
 
@@ -113,30 +115,36 @@ public class AccountViewer : MonoBehaviour {
         ClickBtn.Play();
         if (reg_id.text != "")
         {
-            if (reg_pw.text != "")
+            if (reg_id.text.Substring(0, 1) != "0")
             {
-                if (reg_name.text != "")
+                if (reg_pw.text != "")
                 {
-                    if (GetComponentsInChildren<Toggle>()[0].isOn)
+                    if (reg_name.text != "")
                     {
-                        reg_sex = "0"; //"boy";
+                        if (GetComponentsInChildren<Toggle>()[0].isOn)
+                        {
+                            reg_sex = "0"; //"boy";
+                        }
+                        else
+                        {
+                            reg_sex = "1";// "girl";
+                        }
+                        registerinfo = new string[] { reg_id.text, reg_pw.text, reg_name.text, reg_sex };
+                        StartCoroutine(register());
                     }
                     else
                     {
-                        reg_sex = "1";// "girl";
+                        showerror("名稱不可為空");
                     }
-                    registerinfo = new string[] { reg_id.text, reg_pw.text, reg_name.text, reg_sex };
-                    StartCoroutine(register());
                 }
                 else
                 {
-                    showerror("名稱不可為空");
+                    showerror("密碼不可為空");
                 }
             }
-            else
-            {
-                showerror("密碼不可為空");
-            }
+            else { 
+            showerror("帳號不可為0開頭");
+             }
         }
         else
         {

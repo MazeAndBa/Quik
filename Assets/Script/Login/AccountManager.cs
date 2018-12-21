@@ -37,6 +37,10 @@ public class AccountManager {
             {
                 state = 2;//連線失敗
             }
+            else if (reg.text == "2")
+            {
+                state = 3;//發生錯誤
+            }
             else//帳密正確
              {
                  AccountInfo = reg.text.Split(',');

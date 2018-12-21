@@ -48,6 +48,8 @@ public class PracticeView : MonoBehaviour {
     }
 
     void Start () {
+        UI_ShowMes.SetActive(true);
+        UI_ShowMes.GetComponentInChildren<Text>().text = "載入中...";
         text_score = score.GetComponentsInChildren<Text>()[0];
         ClickBtn = GetComponentsInChildren<AudioSource>()[0];
         p_score = 0;
@@ -59,11 +61,9 @@ public class PracticeView : MonoBehaviour {
         totalQuesNum = 10;//練習題數
         showAchieve = false;
         UIManager.Instance.CloseAllPanel();
-
-        showReviewUI();
     }
     #region Review function
-    
+
     void showReviewUI()
     {
         UIManager.Instance.ShowPanel("P_ReviewUI");
@@ -97,6 +97,8 @@ public class PracticeView : MonoBehaviour {
     IEnumerator showReviewVocabulary(){
         StartCoroutine(pm.LoadVocabulary("loadVocabulary.php"));
         yield return new WaitForSeconds(0.5f);
+        UI_ShowMes.SetActive(false);
+        showReviewUI();
         changeVocabularyID(0);
     }
 
@@ -242,8 +244,8 @@ public class PracticeView : MonoBehaviour {
         if (!UIManager.Instance.IsUILive("P_ComposeUI"))
         {
             UIManager.Instance.ShowPanel("P_ComposeUI");
+            showComposeUI();
         }
-        showComposeUI();
     }
 
     #endregion
@@ -264,7 +266,7 @@ public class PracticeView : MonoBehaviour {
 
         quesID = 0;
         randomQuestion = pm.randomQuestion();
-        showComposeQues(quesID);
+        StartCoroutine(showComposeQues(quesID));
     }
 
     ////刪除所有字母按鈕
@@ -277,26 +279,27 @@ public class PracticeView : MonoBehaviour {
                 Destroy(CollectBtnObj[i].gameObject);
             }
         }
-        showComposeQues(quesID);
+        StartCoroutine(showComposeQues(quesID));
     }
 
     //初始化題目
-    void showComposeQues(int quesID)
+    IEnumerator showComposeQues(int quesID)
     {
         text_quescontent.text = "";//初始化題目空格
         userAns = "";
 
         playAudio(randomQuestion[quesID]);
+        StartCoroutine(randomSort(randomQuestion[quesID]));
+        yield return new WaitForSeconds(0.1f);
         text_totalQues.text = (quesID + 1).ToString() + "/" + totalQuesNum;
         text_Question.text = pm.T_vocabularyDic[randomQuestion[quesID]];
         for (int i = 0; i < pm.E_vocabularyDic[randomQuestion[quesID]].Length; i++) {
             text_quescontent.text += "_ ";
         }
-        randomSort(randomQuestion[quesID]);
     }
 
     //重新排列字母
-    void randomSort(int index) {
+    IEnumerator randomSort(int index) {
         int random;
         char tmp;
         char []randomAns= pm.E_vocabularyDic[randomQuestion[quesID]].ToCharArray();
@@ -308,6 +311,7 @@ public class PracticeView : MonoBehaviour {
         }
         //生成按鈕
         creatAlphabetBtn(randomAns);
+        yield return new WaitForSeconds(0.1f);
     }
 
     void creatAlphabetBtn(char[] randomAns) {

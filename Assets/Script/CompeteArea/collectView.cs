@@ -154,7 +154,7 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
         else //競賽結束，顯示本次雙方分數
         {
             this.StartCoroutine("ShowResultsBeginNextTurnCoroutine");
-            yield return new WaitForSeconds(5f);
+            yield return new WaitForSeconds(2.5f);
             this.StartCoroutine("showResult");
         }
     }
@@ -192,11 +192,6 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
     public void StartTurn()
     {
         Debug.Log("start");
-
-        if (this.turnManager.Turn == 0)
-        {
-            InitialGameUI();
-        }
         //房主抓取題目、選項、當前回合數
         if (PhotonNetwork.isMasterClient)
         {
@@ -204,13 +199,18 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
             this.turnManager.selectQues(collectConn.ques);
             this.turnManager.randomOptions(collectConn.option);
         }
+        if (this.turnManager.Turn <= 1)
+        {
+            InitialGameUI();
+        }
         this.question.text = "";
         this.localSelection = "";
         this.remoteSelection = "";
 
     }
-    public IEnumerator initialTurn()//回合初始化
+    public IEnumerator initialTurn()//每回合初始化
     {
+        yield return new WaitForSeconds(0.5f);
         //存取新題目、選項、當前回合數
         quesInfo = this.turnManager.TurnQues;
         s_option = this.turnManager.TurnOption;
@@ -232,7 +232,7 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
         //播放聲音
         vol_pronun.clip = Resources.Load("Sound/" + quesInfo[2], typeof(AudioClip)) as AudioClip;
         vol_pronun.Play();
-        yield return new WaitForSeconds(1f);
+
         timerflag = true;
         currentTime = (int)this.turnManager.TurnDuration;
         this.TimeText.text = currentTime.ToString();
@@ -310,7 +310,7 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
     }
 
 
-    //判斷輸贏結果
+    //判斷作答結果
     private void CalculateWinAndLoss()
     {
         if (this.localSelection == "")
@@ -352,7 +352,73 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
         }
     }
 
-    //顯示當回合的答題結果
+    //計算得分
+    private void UpdateScores()
+    {
+        PhotonPlayer local = PhotonNetwork.player;
+        int spendTime = DateDiff(this.localTime, TurnStartTime);
+        int restTime = (int)this.turnManager.TurnDuration - spendTime;//剩餘時間
+        int _hintLA = xmlprocess.getRoundHintcount("hint_LA");//當回合使用提示再聽一次的次數
+        int _hintST = xmlprocess.getRoundHintcount("hint_ST");//當回合使用提示中譯的次數
+        string resultState = "";
+        switch (this.result)
+        {
+            case ResultType.CorrectAns:
+                PhotonNetwork.player.AddScore((int)(restTime * 0.8 + local.GetScore() * 0.2 - (_hintLA * 1) - (_hintST * 1.5) + (PhotonNetwork.room.PlayerCount * 0.25)));//剩餘時間*0.8+原本分數*0.2-使用提示+房間人數*0.5
+                resultState = "correct";
+                break;
+            case ResultType.None:
+                PhotonNetwork.player.AddScore(-4);
+                resultState = "none";
+                break;
+            case ResultType.WrongAns:
+                PhotonNetwork.player.AddScore(-1);
+                resultState = "wrong";
+                break;
+        }
+        //Debug.Log("花費時間: "+ spendTime);
+        achievementState[0] = xmlprocess.setRoundAns(resultState, spendTime);//答題迅速獎章
+        StartCoroutine(UpdatePlayerTexts());
+    }
+
+    //更新即時排名
+    IEnumerator UpdatePlayerTexts()
+    {
+        Debug.Log("Refresh the leadboard!");
+        yield return new WaitForSeconds(0.5f);
+        PhotonPlayer local = PhotonNetwork.player;
+        player = PhotonNetwork.playerList;
+        int localRank = 0;
+        //依分數排序玩家清單
+        for (int i = 0; i < PhotonNetwork.room.PlayerCount - 1; i++)
+        {
+            for (int j = i + 1; j < PhotonNetwork.room.PlayerCount; j++)
+            {
+                if (player[i].GetScore() < player[j].GetScore())
+                {
+                    PhotonPlayer tmp = player[j];
+                    player[j] = player[i];
+                    player[i] = tmp;
+                }
+            }
+        }
+        //更新排行榜UI與自己畫面的分數
+        for (int i = 0; i < PhotonNetwork.room.PlayerCount; i++)
+        {
+            GameObject GameRank = GameObject.FindGameObjectWithTag("GameRank");
+            GameRank.GetComponentsInChildren<Text>()[i].text = player[i].NickName + "　" + player[i].GetScore().ToString("D2") + "分";
+            if (local.NickName == player[i].NickName) localRank = i + 1;
+        }
+        if (local != null)
+        {
+            this.LocalPlayerText.text = local.GetScore().ToString("D2");
+        }
+        xmlprocess.setRoundScore(local.GetScore(), localRank);
+        //回合結束
+        StartCoroutine(this.OnEndTurn());
+    }
+
+    //顯示當回合的答題UI
     public IEnumerator ShowResultsBeginNextTurnCoroutine()
     {
         //ButtonCanvasGroup.interactable = false;
@@ -388,72 +454,6 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
         {
             this.StartTurn();
         }
-    }
-
-    //計算得分
-    private void UpdateScores()
-    {
-        PhotonPlayer local = PhotonNetwork.player;
-        int spendTime = DateDiff(this.localTime, TurnStartTime);
-        int restTime = (int)this.turnManager.TurnDuration - spendTime;//剩餘時間
-        int _hintLA = xmlprocess.getRoundHintcount("hint_LA");//當回合使用提示再聽一次的次數
-        int _hintST = xmlprocess.getRoundHintcount("hint_ST");//當回合使用提示中譯的次數
-        string resultState = "";
-        switch (this.result)
-        {
-            case ResultType.CorrectAns:
-                PhotonNetwork.player.AddScore((int)(restTime * 0.8+ local.GetScore() * 0.2 - (_hintLA * 1) - (_hintST *1.5)+ (PhotonNetwork.room.PlayerCount * 0.25) ));//剩餘時間*0.8+原本分數*0.2-使用提示+房間人數*0.5
-                resultState = "correct";
-                break;
-            case ResultType.None:
-                PhotonNetwork.player.AddScore(-4);
-                resultState = "none";
-                break;
-            case ResultType.WrongAns:
-                PhotonNetwork.player.AddScore(-1);
-                resultState = "wrong";
-                break;
-        }
-        //Debug.Log("花費時間: "+ spendTime);
-        achievementState[0] = xmlprocess.setRoundAns(resultState, spendTime);//答題迅速獎章
-        StartCoroutine(UpdatePlayerTexts());
-    }
-
-//更新即時排名
-    IEnumerator UpdatePlayerTexts()
-    {
-        Debug.Log("Refresh the leadboard!");
-        PhotonPlayer local = PhotonNetwork.player;
-        //player = PhotonNetwork.playerList;
-        int localRank = 0;
-        //依分數排序玩家清單
-        for (int i = 0; i < PhotonNetwork.room.PlayerCount-1; i++)
-        {
-            for (int j = i + 1; j < PhotonNetwork.room.PlayerCount; j++)
-            {
-                if (player[i].GetScore() < player[j].GetScore())
-                {
-                    PhotonPlayer tmp = player[j];
-                    player[j] = player[i];
-                    player[i] = tmp;
-                }
-            }
-        }
-        //更新排行榜UI與自己畫面的分數
-        for (int i = 0; i < PhotonNetwork.room.PlayerCount; i++)
-        {
-            GameObject GameRank = GameObject.FindGameObjectWithTag("GameRank");
-            GameRank.GetComponentsInChildren<Text>()[i].text = player[i].NickName + "　" + player[i].GetScore().ToString("D2")+"分";
-            if (local.NickName == player[i].NickName) localRank = i+1;
-        }
-        if (local != null)
-        {
-            this.LocalPlayerText.text = local.GetScore().ToString("D2");
-        }
-        xmlprocess.setRoundScore(local.GetScore(),localRank);
-        //回合結束
-        yield return new WaitForSeconds(0.5f);
-        StartCoroutine(this.OnEndTurn());
     }
 
     #region Recheck connect and Initialize UI
@@ -524,8 +524,10 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
         {
             PhotonPlayer local = PhotonNetwork.player;
             LocalPlayerText.text = local.GetScore().ToString("D2");
+            PhotonNetwork.playerList[i].SetScore(0);//重置玩家分數
             player = PhotonNetwork.playerList;
-            player[i].SetScore(0);//重置玩家分數
+            //player[i].SetScore(0);
+
             Text remote = Instantiate(RemotePlayerText);
             GameObject GameRank = GameObject.FindGameObjectWithTag("GameRank");
             remote.transform.SetParent(GameRank.transform);
@@ -634,12 +636,6 @@ public class collectView : PunBehaviour, IPunTurnManagerCallbacks
     void ExitGame(int sceneNum ,GameObject [] PlayerLists)//遊戲結束時離開
     {
         /*--------------------------*/
-        //遊戲結束重置玩家分數
-        //PhotonPlayer[] player = PhotonNetwork.playerList;
-       /* for (int i = 0; i < PhotonNetwork.room.PlayerCount; i++)
-        {
-            player[i].SetScore(0);
-        }*/
         //銷毀排行榜的玩家名單物件
         if (PlayerLists.Length > 0)
         {
